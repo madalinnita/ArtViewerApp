@@ -5,7 +5,6 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.nitaioanmadalin.artviewer.data.local.converters.ListConverters
 import com.nitaioanmadalin.artviewer.data.local.entity.ArtObjectEntity
-import com.nitaioanmadalin.artviewer.data.local.entity.HeaderImageEntity
 import com.nitaioanmadalin.artviewer.data.local.entity.MuseumRemoteKeysEntity
 
 @Database(

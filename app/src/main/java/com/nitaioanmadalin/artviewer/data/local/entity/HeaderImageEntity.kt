@@ -1,9 +1,6 @@
 package com.nitaioanmadalin.artviewer.data.local.entity
 
 import android.os.Parcelable
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-import com.nitaioanmadalin.artviewer.core.utils.Constants
 import com.nitaioanmadalin.artviewer.domain.model.HeaderImage
 import kotlinx.parcelize.Parcelize
 

@@ -1,9 +1,7 @@
 package com.nitaioanmadalin.artviewer.domain.usecase.collections
 
 import androidx.paging.PagingData
-import com.nitaioanmadalin.artviewer.core.utils.network.AppResult
 import com.nitaioanmadalin.artviewer.data.local.entity.ArtObjectEntity
-import com.nitaioanmadalin.artviewer.domain.model.ArtObject
 import kotlinx.coroutines.flow.Flow
 
 interface GetCollectionsUseCase {

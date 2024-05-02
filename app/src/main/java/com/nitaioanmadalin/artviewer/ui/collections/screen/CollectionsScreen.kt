@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.paging.CombinedLoadStates
-import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import com.nitaioanmadalin.artviewer.domain.model.ArtObject
 import com.nitaioanmadalin.artviewer.ui.collections.CollectionsViewState

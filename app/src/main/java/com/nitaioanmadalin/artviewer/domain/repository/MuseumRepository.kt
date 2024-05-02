@@ -2,7 +2,6 @@ package com.nitaioanmadalin.artviewer.domain.repository
 
 import androidx.paging.PagingData
 import com.nitaioanmadalin.artviewer.data.local.entity.ArtObjectEntity
-import com.nitaioanmadalin.artviewer.domain.model.ArtObject
 import kotlinx.coroutines.flow.Flow
 
 interface MuseumRepository {
