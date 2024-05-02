@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/collectionsFragment">
+
+    <fragment
+        android:id="@+id/collectionsFragment"
+        android:name="com.nitaioanmadalin.artviewer.ui.collections.CollectionsFragment">
+
+        <action
+            android:id="@+id/collections_to_details"
+            app:destination="@id/collectionDetailsFragment"
+            />
+
+    </fragment>
+
+    <fragment android:id="@+id/collectionDetailsFragment"
+        android:name="com.nitaioanmadalin.artviewer.ui.collectiondetails.CollectionDetailsFragment">
+
+        <argument
+            android:name="artObject"
+            app:argType="com.nitaioanmadalin.artviewer.domain.model.ArtObject"
+            app:nullable="false"/>
+
+    </fragment>
+</navigation>
