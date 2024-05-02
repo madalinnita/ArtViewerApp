@@ -6,7 +6,7 @@ import retrofit2.http.Query
 
 interface MuseumApi {
 
-    @GET("/api/nl//collection?s=artist")
+    @GET("/api/nl//collection?s=artist&imgonly=true")
     suspend fun getCollections(
         @Query("p") page: Int,
         @Query("ps") pageSize: Int

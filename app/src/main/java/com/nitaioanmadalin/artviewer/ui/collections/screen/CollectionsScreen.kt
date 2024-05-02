@@ -18,28 +18,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import com.nitaioanmadalin.artviewer.domain.model.ArtObject
+import com.nitaioanmadalin.artviewer.ui.collections.CollectionsViewState
 import com.nitaioanmadalin.artviewer.ui.collections.content.CollectionsContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CollectionsScreen(
     artObjects: LazyPagingItems<ArtObject>,
-    onCollectionClicked: (ArtObject) -> Unit
+    screenState: CollectionsViewState,
+    onCollectionClicked: (ArtObject) -> Unit,
+    setState: (loadState: CombinedLoadStates) -> Unit
 ) {
     val context = LocalContext.current
     LaunchedEffect(key1 = artObjects.loadState) {
-        if(artObjects.loadState.refresh is LoadState.Error) {
-            val errorMessage = "Error - ${(artObjects.loadState.refresh as LoadState.Error).error.message}"
-            Log.e(TAG, errorMessage)
-            Toast.makeText(
-                context,
-                errorMessage,
-                Toast.LENGTH_LONG
-            ).show()
-        }
+        setState(artObjects.loadState)
+    }
+
+    if (screenState is CollectionsViewState.Error) {
+        val errorMessage = "Error - ${screenState.ex.message}"
+        Log.e(TAG, errorMessage)
+        Toast.makeText(
+            context,
+            errorMessage,
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     Scaffold(
@@ -49,14 +55,15 @@ fun CollectionsScreen(
     ) { paddingValues ->
         Surface(Modifier.padding(paddingValues)) {
             Box(modifier = Modifier.fillMaxSize()) {
-                if (artObjects.loadState.refresh is LoadState.Loading) {
+                if (screenState is CollectionsViewState.Loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 } else {
                     CollectionsContent(
                         artObjects = artObjects,
-                        onCollectionClicked = onCollectionClicked
+                        onCollectionClicked = onCollectionClicked,
+                        showNextLoading = (screenState as? CollectionsViewState.Success)?.showNextLoading ?: false
                     )
                 }
             }

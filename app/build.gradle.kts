@@ -119,5 +119,7 @@ dependencies {
     implementation("androidx.paging:paging-runtime-ktx:3.2.1")
     implementation("io.coil-kt:coil-compose:2.2.2")
     implementation("androidx.room:room-paging:$room_version")
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
+
 
 }
