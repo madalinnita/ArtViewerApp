@@ -1,8 +1,11 @@
 package com.nitaioanmadalin.artviewer.ui.collections.content
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
@@ -156,8 +160,9 @@ fun ArtObjectItem(
             )
             Column(
                 modifier = Modifier
-                    .clip(shape = RoundedCornerShape(20.dp))
-                    .background(Color.LightGray)
+                    .clip(shape = RoundedCornerShape(8.dp))
+                    .background(Color.LightGray.copy(alpha = 0.6f))
+                    .border(BorderStroke(2.dp, SolidColor(Color.LightGray)))
             ) {
                 Text(
                     modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp),
@@ -178,28 +183,5 @@ fun ArtObjectItem(
             }
         }
     }
-}
-
-@Composable
-fun LoadNetworkImage(url: String?) {
-    val painter =
-        rememberAsyncImagePainter(
-            ImageRequest.Builder(LocalContext.current)
-                .data(data = url ?: R.drawable.noimage)
-                .apply(block = fun ImageRequest.Builder.() {
-                    crossfade(1000)
-                    placeholder(R.drawable.loadingplaceholder)
-                    error(R.drawable.error_image)
-                }
-                ).build()
-        )
-
-    Image(
-        painter = painter,
-        contentDescription = null,
-        modifier = Modifier
-            .width(150.dp)
-            .height(400.dp)
-    )
 }
 

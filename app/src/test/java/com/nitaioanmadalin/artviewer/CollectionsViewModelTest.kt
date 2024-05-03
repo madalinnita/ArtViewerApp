@@ -1,24 +1,24 @@
 package com.nitaioanmadalin.artviewer
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.paging.CombinedLoadStates
+import androidx.paging.LoadState
+import androidx.paging.LoadStates
+import androidx.paging.PagingData
 import com.nitaioanmadalin.artviewer.core.utils.coroutine.CoroutineDispatchersProvider
-import com.nitaioanmadalin.artviewer.core.utils.log.LogProvider
-import com.nitaioanmadalin.artviewer.core.utils.network.AppResult
-import com.nitaioanmadalin.artviewer.core.utils.network.ConnectivityUtils
-import com.nitaioanmadalin.artviewer.core.utils.rx.SchedulerProvider
+import com.nitaioanmadalin.artviewer.data.local.entity.ArtObjectEntity
+import com.nitaioanmadalin.artviewer.data.local.entity.HeaderImageEntity
 import com.nitaioanmadalin.artviewer.domain.usecase.collections.GetCollectionsUseCase
-import com.nitaioanmadalin.artviewer.ui.collections.CollectionsScreenState
 import com.nitaioanmadalin.artviewer.ui.collections.CollectionsViewModel
+import com.nitaioanmadalin.artviewer.ui.collections.CollectionsViewState
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.core.Observer
-import io.reactivex.rxjava3.core.Scheduler
-import io.reactivex.rxjava3.schedulers.Schedulers
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -47,99 +47,164 @@ class CollectionsViewModelTest {
         override fun computation(): CoroutineDispatcher = testDispatcher
     }
 
-    private val testScheduler = Schedulers.trampoline()
-    private val scheduler = object: SchedulerProvider {
-        override fun io(): Scheduler = testScheduler
-        override fun main(): Scheduler = testScheduler
-        override fun computation(): Scheduler = testScheduler
-    }
-
     private val scope = TestScope(testDispatcher)
 
     @MockK(relaxed = true)
-    private lateinit var connectivityUtils: ConnectivityUtils
-
-    @MockK(relaxed = true)
     private lateinit var getCollectionsUseCase: GetCollectionsUseCase
-
-    @MockK(relaxed = true)
-    private lateinit var logProvider: LogProvider
-
-    @MockK
-    private lateinit var stateObserver: Observer<CollectionsScreenState>
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setup() {
         MockKAnnotations.init(this)
         Dispatchers.setMain(testDispatcher)
-        viewModel = CollectionsViewModel(getCollectionsUseCase, connectivityUtils, dispatchers, scheduler, logProvider)
+        viewModel = CollectionsViewModel(getCollectionsUseCase, dispatchers)
     }
 
     @Test
-    fun `getRxData emits loading state when use case returns loading`() = scope.runTest {
-        val loadingResult = AppResult.Loading<List<Pet>>(emptyList())
-        every {
-            getCollectionsUseCase.getRxPetList()
-        } returns Observable.just(loadingResult)
+    fun `when museumPagingFlow is retrieved then call getCollection on GetCollectionsUseCase`() =
+        runTest(testDispatcher) {
+            val pagingData =
+                PagingData.from(listOf(getArtObjectEntity("2"), getArtObjectEntity("3")))
+            val mockedFlow = flowOf(pagingData)
 
-        val viewStateList = mutableListOf<CollectionsScreenState>()
-        val job = launch {
-            viewModel.state.toList(viewStateList)
+            every {
+                getCollectionsUseCase.getCollections()
+            } returns mockedFlow
+
+            viewModel.museumPagingFlow
+
+            verify(exactly = 1) {
+                getCollectionsUseCase.getCollections()
+            }
         }
-
-        viewModel.getRxData()
-
-        advanceTimeBy(1000)
-
-        val state = viewStateList.last()
-        Assert.assertTrue(state is CollectionsScreenState.Loading && state.daoRepositories?.isEmpty() == true)
-
-        job.cancel()
-    }
 
     @Test
-    fun `getRxData emits error state when use case returns error`() = scope.runTest {
-        val errorResult = AppResult.Error(Throwable())
-        every {
-            getCollectionsUseCase.getRxPetList()
-        } returns Observable.just(errorResult)
+    fun `when setStateDependingOn is called with refresh - Loading then trigger Loading event`() =
+        scope.runTest {
+            val viewStateList = mutableListOf<CollectionsViewState>()
+            val job = launch {
+                viewModel.state.toList(viewStateList)
+            }
 
-        val viewStateList = mutableListOf<CollectionsScreenState>()
-        val job = launch {
-            viewModel.state.toList(viewStateList)
+            viewModel.setStateDependingOn(
+                CombinedLoadStates(
+                    refresh = LoadState.Loading,
+                    append = LoadState.Error(Throwable()),
+                    prepend = LoadState.Error(Throwable()),
+                    source = LoadStates(
+                        LoadState.Loading,
+                        LoadState.Error(Throwable()),
+                        LoadState.Error(Throwable())
+                    )
+                )
+            )
+
+            advanceTimeBy(1000)
+
+            val state = viewStateList.last()
+            Assert.assertTrue(state is CollectionsViewState.Loading)
+
+            job.cancel()
         }
-
-        viewModel.getRxData()
-
-        advanceTimeBy(1000)
-
-        val state = viewStateList.last()
-        Assert.assertTrue(state is CollectionsScreenState.Error)
-
-        job.cancel()
-    }
 
     @Test
-    fun `getRxData emits success state when use case returns success`() = scope.runTest {
-        val pets = listOf(Pet(name = "Dog"), Pet(name = "Cat"))
-        val successResult = AppResult.Success(pets)
-        every {
-            getCollectionsUseCase.getRxPetList()
-        } returns Observable.just(successResult)
+    fun `when setStateDependingOn is called with refresh - Error then trigger Error event`() =
+        scope.runTest {
+            val viewStateList = mutableListOf<CollectionsViewState>()
+            val job = launch {
+                viewModel.state.toList(viewStateList)
+            }
 
-        val viewStateList = mutableListOf<CollectionsScreenState>()
-        val job = launch {
-            viewModel.state.toList(viewStateList)
+            viewModel.setStateDependingOn(
+                CombinedLoadStates(
+                    refresh = LoadState.Error(Throwable()),
+                    append = LoadState.Error(Throwable()),
+                    prepend = LoadState.Error(Throwable()),
+                    source = LoadStates(
+                        LoadState.Error(Throwable()),
+                        LoadState.Error(Throwable()),
+                        LoadState.Error(Throwable())
+                    )
+                )
+            )
+
+            advanceTimeBy(1000)
+
+            val state = viewStateList.last()
+            Assert.assertTrue(state is CollectionsViewState.Error)
+
+            job.cancel()
         }
 
-        viewModel.getRxData()
+    @Test
+    fun `when setStateDependingOn is called with append - Loading then trigger Error event with showNextLoading true`() =
+        scope.runTest {
+            val viewStateList = mutableListOf<CollectionsViewState>()
+            val job = launch {
+                viewModel.state.toList(viewStateList)
+            }
 
-        advanceTimeBy(1000)
+            viewModel.setStateDependingOn(
+                CombinedLoadStates(
+                    refresh = LoadState.NotLoading(endOfPaginationReached = false),
+                    append = LoadState.Loading,
+                    prepend = LoadState.NotLoading(endOfPaginationReached = false),
+                    source = LoadStates(
+                        LoadState.NotLoading(endOfPaginationReached = false),
+                        LoadState.Loading,
+                        LoadState.NotLoading(endOfPaginationReached = false)
+                    )
+                )
+            )
 
-        val state = viewStateList.last()
-        Assert.assertTrue(state is CollectionsScreenState.Success && state.repositories.size == 2)
+            advanceTimeBy(1000)
 
-        job.cancel()
-    }
+            val state = viewStateList.last()
+            Assert.assertTrue(state is CollectionsViewState.Success)
+            Assert.assertTrue((state as? CollectionsViewState.Success)?.showNextLoading == true)
+
+            job.cancel()
+        }
+
+    @Test
+    fun `when setStateDependingOn is called with append - NotLoading then trigger Error event with showNextLoading false`() =
+        scope.runTest {
+            val viewStateList = mutableListOf<CollectionsViewState>()
+            val job = launch {
+                viewModel.state.toList(viewStateList)
+            }
+
+            viewModel.setStateDependingOn(
+                CombinedLoadStates(
+                    refresh = LoadState.NotLoading(endOfPaginationReached = false),
+                    append = LoadState.NotLoading(endOfPaginationReached = false),
+                    prepend = LoadState.NotLoading(endOfPaginationReached = false),
+                    source = LoadStates(
+                        LoadState.NotLoading(endOfPaginationReached = false),
+                        LoadState.NotLoading(endOfPaginationReached = false),
+                        LoadState.NotLoading(endOfPaginationReached = false)
+                    )
+                )
+            )
+
+            advanceTimeBy(1000)
+
+            val state = viewStateList.last()
+            Assert.assertTrue(state is CollectionsViewState.Success)
+            Assert.assertTrue((state as? CollectionsViewState.Success)?.showNextLoading == false)
+
+            job.cancel()
+        }
+
+    private fun getArtObjectEntity(
+        id: String = "1"
+    ) = ArtObjectEntity(
+        id = id,
+        objectNumber = "2-4-6",
+        title = "Title",
+        principalOrFirstMaker = "FirstMaker",
+        longTitle = "Long title",
+        headerImage = HeaderImageEntity(400.toLong(), 400.toLong(), ""),
+        productionPlaces = emptyList()
+    )
 }
